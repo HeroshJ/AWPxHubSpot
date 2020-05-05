@@ -3,6 +3,14 @@ const cron = require("node-cron");
 const dotenv = require("dotenv");
 dotenv.config();
 
+const pipeline = 2084695;
+const pipeline_stages = {
+  paid: 2084696,
+  rejected: 2084697,
+  pending: 2139858,
+  unpaid: 2139958,
+};
+
 const HS_API_KEY = process.env.HS_API_KEY; //hs
 const AWP_PUBLIC_KEY = `${process.env.AWP_PUBLIC_KEY}`; //awp username
 const AWP_TOKEN = `${process.env.AWP_TOKEN}`; //awp password
@@ -21,13 +29,13 @@ const HSconfig = {
     Accept: "application/json",
   },
 };
-let returnedDeals;
+let returnedDeals = {};
 let returnedContacts = {};
 let returnedProducts = {};
 
-cron.schedule(`0 ${HOURS_INTERVAL} * * *`, function () {
-  syncContacts();
-});
+// cron.schedule(`0 ${HOURS_INTERVAL} * * *`, function () {
+//   syncContacts();
+// });
 //=====================================GET HUBSPOT CONTACTS=======================================
 
 async function getContacts(offset) {
@@ -58,7 +66,6 @@ async function getContacts(offset) {
     getContacts(res["vid-offset"]);
   } else {
     console.log("getting contacts done");
-    returnedDeals = new Set();
     getDeals();
   }
 }
@@ -68,7 +75,7 @@ async function getContacts(offset) {
 const getDeals = async (offset) => {
   let offsetParam = offset === undefined ? `` : `&offset=${offset}`;
 
-  const propterties = `&formSubmissionMode=none&properties=awp_referral_id&limit=250`;
+  const propterties = `&formSubmissionMode=none&properties=awp_referral_id&properties=dealstage&limit=250`;
   const paramsString = `?${hapikeyParam}${propterties}${offsetParam}`;
   const config = {
     headers: {
@@ -79,13 +86,15 @@ const getDeals = async (offset) => {
   const finalUrl = `https://api.hubapi.com/deals/v1/deal/paged${paramsString}`;
   const res = (await axios.get(finalUrl, config)).data;
   res.deals.forEach((el) => {
-    returnedDeals.add(el.properties.awp_referral_id.value);
+    returnedDeals[el.properties.awp_referral_id.value] = {
+      dealId: el.dealId,
+      dealstage: el.properties.dealstage.value,
+    };
   });
   if (res.hasMore) {
     getDeals(res.offset);
   } else {
     console.log("getting hubspot deals, done");
-
     syncDeals();
   }
 };
@@ -102,8 +111,26 @@ const syncDeals = async () => {
     const data = referrals.data;
     let mappedReferrals = [];
     data.forEach((referral) => {
-      if (!returnedDeals.has(referral.referral_id.toString())) {
+      if (!returnedDeals[referral.referral_id]) {
         mappedReferrals.push(mapDealProps(referral));
+      } else if (
+        returnedDeals[referral.referral_id].dealstage !=
+        pipeline_stages[referral.status]
+      ) {
+        console.log(
+          "update: " +
+            returnedDeals[referral.referral_id].dealstage +
+            " " +
+            pipeline_stages[referral.status]
+        );
+        setTimeout(
+          () =>
+            updateDeal(
+              returnedDeals[referral.referral_id].dealId,
+              referral.status
+            ),
+          500
+        );
       }
     });
     start(mappedReferrals, postDeal);
@@ -128,20 +155,38 @@ const start = async (props, action) => {
   });
 };
 
+const updateDeal = (dealId, status) => {
+  const url = `https://api.hubapi.com/deals/v1/deal/${dealId}?${hapikeyParam}`;
+  try {
+    axios.put(
+      url,
+      {
+        properties: [
+          {
+            name: "awp_status",
+            value: status,
+          },
+          {
+            value: pipeline_stages[status] || null,
+            name: "dealstage",
+          },
+        ],
+      },
+      HSconfig
+    );
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 /**
  * Post mapped referral information to HubSpot Deal records
  * @param {Object} props - Deal properties returned from mapDealProps
  */
 const postDeal = (props) => {
-  const config = {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-
   const url = `https://api.hubapi.com/deals/v1/deal?${hapikeyParam}`;
   axios
-    .post(url, props.dealInfo, config)
+    .post(url, props.dealInfo, HSconfig)
     .then((res) => {
       const dealId = res.data.dealId;
       products = props.products;
@@ -197,20 +242,11 @@ const mapDealProps = (deal) => {
             name: "dealname",
           },
           {
-            value: 2084695,
+            value: pipeline,
             name: "pipeline",
           },
           {
-            value:
-              deal.status === "paid"
-                ? 2084696
-                : deal.status === "rejected"
-                ? 2084697
-                : deal.status === "pending"
-                ? 2139858
-                : deal.status === "unpaid"
-                ? 2139958
-                : null,
+            value: pipeline_stages[deal.status] || null,
             name: "dealstage",
           },
         ],
@@ -441,3 +477,5 @@ const mapContactProps = (contact) => {
     ],
   };
 };
+
+syncContacts();
