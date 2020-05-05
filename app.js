@@ -33,9 +33,6 @@ let returnedDeals = {};
 let returnedContacts = {};
 let returnedProducts = {};
 
-cron.schedule(`0 ${HOURS_INTERVAL} * * *`, function () {
-  syncContacts();
-});
 //=====================================GET HUBSPOT CONTACTS=======================================
 
 async function getContacts(offset) {
@@ -477,3 +474,6 @@ const mapContactProps = (contact) => {
     ],
   };
 };
+
+//Run command
+syncContacts();
