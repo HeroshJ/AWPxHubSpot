@@ -83,10 +83,12 @@ const getDeals = async (offset) => {
   const finalUrl = `https://api.hubapi.com/deals/v1/deal/paged${paramsString}`;
   const res = (await axios.get(finalUrl, config)).data;
   res.deals.forEach((el) => {
-    returnedDeals[el.properties.awp_referral_id.value] = {
-      dealId: el.dealId,
-      dealstage: el.properties.dealstage.value,
-    };
+    if (el.properties.awp_referral_id !== undefined) {
+      returnedDeals[el.properties.awp_referral_id.value] = {
+        dealId: el.dealId,
+        dealstage: el.properties.dealstage.value,
+      };
+    }
   });
   if (res.hasMore) {
     getDeals(res.offset);
