@@ -273,7 +273,7 @@ const mapDealProps = (deal) => {
 //====================================PRODUCTS & LINE ITEMS=========================
 
 const createLineItem = async (dealId, products) => {
-  if (products.length === 0) return;
+  if (!Array.isArray(products) || products.length === 0) return;
   const lineItemProps = mapLineItem(products);
   const paramsString = `?${hapikeyParam}`;
   const finalUrl = `https://api.hubapi.com/crm-objects/v1/objects/line_items/batch-create${paramsString}`;
