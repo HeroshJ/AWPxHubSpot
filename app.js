@@ -1,6 +1,8 @@
 const axios = require("axios");
 const cron = require("node-cron");
 const dotenv = require("dotenv");
+// const WooCommerceRestApi = require("@woocommerce/woocommerce-rest-api").default;
+
 dotenv.config();
 
 const pipeline = 2084695;
@@ -208,6 +210,11 @@ const postDeal = (props) => {
  * @param {Object} deal - AffiliateWP referral information
  */
 const mapDealProps = (deal) => {
+  let amount = 0;
+  if (Array.isArray(deal.products))
+    deal.products.forEach((item) => {
+      amount += parseFloat(item.price);
+    });
   if (returnedContacts[deal.affiliate_id]) {
     const vid = returnedContacts[deal.affiliate_id].vid;
     return {
@@ -233,8 +240,12 @@ const mapDealProps = (deal) => {
             name: "awp_referral_id",
           },
           {
-            value: parseFloat(deal.amount),
+            value: amount,
             name: "amount",
+          },
+          {
+            value: parseFloat(deal.amount),
+            name: "awp_earnings",
           },
           {
             value: returnedContacts[deal.affiliate_id].display_name,
@@ -247,6 +258,10 @@ const mapDealProps = (deal) => {
           {
             value: pipeline_stages[deal.status] || null,
             name: "dealstage",
+          },
+          {
+            value: Date.parse(deal.date),
+            name: "closedate",
           },
         ],
       },
@@ -377,7 +392,7 @@ const syncContacts = async () => {
     //map to hubspot data
     const contactProps = [];
     partners.forEach((contact) => {
-      contactProps.push(mapContactProps(contact));
+      if (contact.user.user_email) contactProps.push(mapContactProps(contact));
     });
     postContacts(contactProps).then((res) => getProducts());
   } catch (err) {
@@ -402,10 +417,8 @@ const postContacts = async (contacts) => {
   try {
     const response = await axios.post(url, contacts, config);
     console.log("partners sync: ", response.status);
-    return response.statusText;
   } catch (err) {
-    console.log(err);
-    return "Failed";
+    console.log(err.response.data);
   }
 };
 
@@ -479,3 +492,51 @@ const mapContactProps = (contact) => {
 
 //Run command
 syncContacts();
+
+// const api = new WooCommerceRestApi({
+//   url: "https://advanced.gg",
+//   consumerKey: "ck_ddb8afcc1afec478aca5a99db60d7f0b786ffe34",
+//   consumerSecret: "cs_e960108a4316b45777a44f045458930357f2c691",
+//   version: "wc/v3",
+// });
+
+// let arr = [];
+
+// const getAllCoupons = (page) => {
+//   api
+//     .get("coupons", { page: page, per_page: 100 })
+//     .then((res) => {
+//       const data = res.data;
+//       data.forEach((ele) => {
+//         ele.meta_data.forEach((meta) => {
+//           if (meta.key === "affwp_discount_affiliate") {
+//             ele.awpID = meta.value;
+//             arr.push(ele);
+//           }
+//         });
+//       });
+//       if (data.length > 0) {
+//         getAllCoupons(page + 1);
+//       }
+//       console.log(arr.length);
+//     })
+//     .catch((err) => console.log(err));
+// };
+
+// // getAllCoupons(1);
+
+// const url = `https://advanced.gg/wp-json/affwp/v1/affiliates/14?rate=0.02`;
+// const config = {
+//   headers: {
+//     Accept: "application/json",
+//     Authorization: `Basic ${token}`,
+//   },
+// };
+
+// const partnersWithCoups = [];
+// axios
+//   .patch(url, config)
+//   .then((res) => {
+//     console.log(res.data);
+//   })
+//   .catch((err) => console.log(err));
