@@ -198,7 +198,10 @@ const postDeal = (props) => {
             count++;
           }
         });
-        setTimeout(() => createLineItem(dealId, products), 1000 * count);
+        setTimeout(() => {
+          console.log("202:", products);
+          createLineItem(dealId, products), 1000 * count;
+        });
       }
     })
     .catch((err) => console.log(err));
