@@ -20,8 +20,6 @@ const AWP_TOKEN = `${process.env.AWP_TOKEN}`; //awp password
 const token = Buffer.from(`${AWP_PUBLIC_KEY}:${AWP_TOKEN}`, "utf8").toString(
   "base64"
 );
-const hours = process.env.HOURS;
-const HOURS_INTERVAL = hours && hours > 0 && hours < 24 ? `0/${hours}` : "0/23"; //hour interval
 
 const hapikeyParam = `hapikey=${HS_API_KEY}`;
 const HSconfig = {
