@@ -22,7 +22,7 @@ const api = new WooCommerceRestApi({
 });
 
 const currentYear = new Date().getFullYear();
-const today = new Date("April 8");
+const today = new Date();
 const start_days = [
   new Date(`January 1 ${currentYear}`),
   new Date(`April 1 ${currentYear}`),
