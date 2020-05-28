@@ -14,7 +14,7 @@ const HSconfig = {
 };
 
 const currentYear = new Date().getFullYear();
-const today = new Date();
+const today = new Date("");
 const quarter_days = [
   new Date(`January 1 ${currentYear}`),
   new Date(`April 1 ${currentYear}`),
@@ -101,7 +101,9 @@ const getDeals = async (offset) => {
       };
     }
   });
+
   if (res.hasMore) {
+    console.log(".");
     getDeals(res.offset);
   } else {
     console.log("getting hubspot deals, done");
@@ -138,7 +140,6 @@ const start = async (props, action) => {
     prop !== null && action(prop);
     console.log(index);
   });
-  console.log(returnedContacts);
   syncContacts();
 };
 
@@ -150,9 +151,11 @@ const syncContacts = async () => {
     //map to hubspot data
     const contactProps = [];
     Object.keys(returnedContacts).forEach((contact) => {
-      contactProps.push(contact, mapContactProps(returnedContacts[contact]));
+      contactProps.push(
+        mapContactProps(contact, returnedContacts[contact.toString()])
+      );
     });
-    postContacts(contactProps).then((res) => getProducts());
+    postContacts(contactProps);
   } catch (err) {
     console.log(err);
   }
@@ -189,7 +192,7 @@ const mapContactProps = (vid, contact) => {
     vid: vid,
     properties: [
       {
-        name: "last_90_days_influenced_revenue",
+        property: "last_90_days_influenced_revenue",
         value: Math.ceil(contact.total_deal_amount * 100) / 100,
       },
     ],
