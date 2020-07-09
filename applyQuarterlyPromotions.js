@@ -78,15 +78,17 @@ const getAllCoupons = (page) => {
                 amount: ele.amount,
                 meta_data: ele.meta_data,
               };
-              console.log(ele.meta_data);
             }
           } else if (
             end_date &&
             meta.key === "affwp_quarterly_promotion" &&
             meta.value == "1"
           ) {
+            const awpid = ele.meta_data.find(
+              (obj) => obj.key === "affwp_discount_affiliate"
+            );
             coupons[ele.id] = {
-              awpID: meta.value,
+              awpID: awpid && awpid.value,
               amount: ele.amount,
               meta_data: ele.meta_data,
             };
@@ -127,9 +129,7 @@ async function getContacts(offset) {
       contact.properties.partner_tier && contact.properties.partner_tier.value;
 
     if (tier === "Tier 1") {
-      console.log(tier);
       tier1.push(contact.properties.awp_affiliate_id.value);
-      console.log(tier1);
     } else if (tier === "Tier 2") {
       tier2.push(contact.properties.awp_affiliate_id.value);
     }
