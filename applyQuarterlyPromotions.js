@@ -242,13 +242,17 @@ const updateAWPCommission = (id, rate) => {
     },
   };
   axios
-    .get(`http://advanced.gg/wp-json/affwp/v1/affiliates/${id}`, config)
+    .get(`http://advanced.gg/wp-json/affwp/v1/affiliates/${id}?user=1`, config)
     .then((res) => {
       if (res.data.rate != "" && parseFloat(res.data.rate) != 0) {
         const newRate = parseFloat(res.data.rate) * rate;
         const url = `https://advanced.gg/wp-json/affwp/v1/affiliates/${id}`;
         const params = new URLSearchParams();
         params.append("rate", newRate);
+        params.append("account_email", res.data.user.user_email);
+        params.append("payment_email", res.data.payment_email);
+        params.append("rate_type", res.data.rate_type);
+        params.append("status", res.data.status);
         axios
           .patch(url, params, config)
           .then((res) => {
