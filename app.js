@@ -183,26 +183,30 @@ const updateDeal = (dealId, status) => {
  */
 const postDeal = (props) => {
   const url = `https://api.hubapi.com/deals/v1/deal?${hapikeyParam}`;
-  axios
-    .post(url, props.dealInfo, HSconfig)
-    .then((res) => {
-      const dealId = res.data.dealId;
-      products = props.products;
-      if (products !== "" && products.length >= 1) {
-        let count = 1;
-        products.forEach((product) => {
-          if (!returnedProducts[product.name]) {
-            createProduct(product);
-            count++;
-          }
-        });
-        setTimeout(() => {
-          console.log("202:", products);
-          createLineItem(dealId, products), 1000 * count;
-        });
-      }
-    })
-    .catch((err) => console.log(err));
+  try {
+    axios
+      .post(url, props.dealInfo, HSconfig)
+      .then((res) => {
+        const dealId = res.data.dealId;
+        products = props.products;
+        if (products !== "" && products.length >= 1) {
+          let count = 1;
+          products.forEach((product) => {
+            if (!returnedProducts[product.name]) {
+              createProduct(product);
+              count++;
+            }
+          });
+          setTimeout(() => {
+            console.log("202:", products);
+            createLineItem(dealId, products), 1000 * count;
+          });
+        }
+      })
+      .catch((err) => console.log(err));
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 /**
